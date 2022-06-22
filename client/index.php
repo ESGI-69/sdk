@@ -1,5 +1,7 @@
 <?php
 
+require './config.inc.php';
+
 class OAuth
 {
   protected $clientId;
@@ -10,6 +12,9 @@ class OAuth
   protected $oAuthUri;
   protected $clientSecret;
   protected $accessTokenUri;
+  protected $tokenArray;
+  protected $userInfoUri;
+  protected $userInfos;
 
   protected function generateQueryParams(): string
   {
@@ -44,13 +49,52 @@ class OAuth
 
   public function getAccessTokenUri(): string
   {
-    return $this->oAuthUri . '?' . $this->generateAccessTokenQueryParams();
+    return $this->accessTokenUri . '?' . $this->generateAccessTokenQueryParams();
+  }
+
+  public function setCode(string $code)
+  {
+    $this->code = $code;
+  }
+
+  public function setToken(string $token)
+  {
+    $this->token = $token;
+  }
+
+  public function getToken()
+  {
+    return $this->token;
+  }
+
+  public function setUserInfos($userInfos)
+  {
+    $this->userInfos = $userInfos;
+  }
+
+  public function getUserInfosContext()
+  {
+    return stream_context_create([
+      'http' => [
+        'header' => "Authorization: Bearer " . $this->getToken() . "",
+      ]
+    ]);
+  }
+
+  public function getUserInfosUri(): string
+  {
+    return $this->userInfoUri;
+  }
+
+  public function __toString()
+  {
+    return json_encode($this->userInfos);
   }
 }
 
 class DiscordOAuth extends OAuth
 {
-  public function __construct(string $clientId, string $oAuthUri, string $scope, string $clientSecret, string $accessTokenUri)
+  public function __construct(string $clientId, string $oAuthUri, string $scope, string $clientSecret, string $accessTokenUri, string $userInfoUri)
   {
     $this->clientId = $clientId;
     $this->scope = $scope;
@@ -58,12 +102,13 @@ class DiscordOAuth extends OAuth
     $this->oAuthUri = $oAuthUri;
     $this->clientSecret = $clientSecret;
     $this->accessTokenUri = $accessTokenUri;
+    $this->userInfoUri = $userInfoUri;
   }
 };
 
 class FacebookOAuth extends OAuth
 {
-  public function __construct(string $clientId, string $oAuthUri, string $scope, string $clientSecret, string $accessTokenUri)
+  public function __construct(string $clientId, string $oAuthUri, string $scope, string $clientSecret, string $accessTokenUri, string $userInfoUri)
   {
     $this->clientId = $clientId;
     $this->scope = $scope;
@@ -71,12 +116,18 @@ class FacebookOAuth extends OAuth
     $this->oAuthUri = $oAuthUri;
     $this->clientSecret = $clientSecret;
     $this->accessTokenUri = $accessTokenUri;
+    $this->userInfoUri = $userInfoUri;
+  }
+
+  public function __toString()
+  {
+    return "Bonjour " . ($this->userInfos['name']) . " !";
   }
 };
 
 class CustomOAuth extends OAuth
 {
-  public function __construct(string $clientId, string $oAuthUri, string $scope, string $clientSecret, string $accessTokenUri)
+  public function __construct(string $clientId, string $oAuthUri, string $scope, string $clientSecret, string $accessTokenUri, string $userInfoUri)
   {
     $this->clientId = $clientId;
     $this->scope = $scope;
@@ -84,33 +135,44 @@ class CustomOAuth extends OAuth
     $this->oAuthUri = $oAuthUri;
     $this->clientSecret = $clientSecret;
     $this->accessTokenUri = $accessTokenUri;
+    $this->userInfoUri = $userInfoUri;
   }
 };
 
 $providers = [
   'Discord' => [
     'class' => new DiscordOAuth(
-      '988797982344372284',
+      DISCORD_CLIENT_ID,
       'http://discord.com/api/oauth2/authorize',
       'identify',
-      'XbTq51Re5g-dxrQ85FKjBuZBmYDMPVTP',
+      DISCORD_CLIENT_SECRET,
+      'https://discord.com/api/oauth2/token',
+      'https://discord.com/api/users/@me',
+      'DISCORD'
     ),
     'prefix' => 'ds_',
   ],
   'Facebook' => [
     'class' => new FacebookOAuth(
-      '504031208137914',
+      FACEBOOK_CLIENT_ID,
       'http://www.facebook.com/v14.0/dialog/oauth',
-      'fc5e25661fe961ab85d130779357541e',
+      'email',
+      FACEBOOK_CLIENT_SECRET,
+      'https://graph.facebook.com/v2.10/oauth/access_token',
+      'https://graph.facebook.com/v2.10/me',
+      'FACEBOOK'
     ),
     'prefix' => 'fb_',
   ],
   'Custom Oauth Server' => [
     'class' => new CustomOAuth(
-      '621f59c71bc35',
+      OAUTH_CLIENT_ID,
       'http://localhost:8080/auth',
       'basic',
-      '621f59c71bc36',
+      OAUTH_CLIENT_SECRET,
+      'http://server:8080/token',
+      'http://server:8080/me',
+      'CUSTOM'
     ),
     'prefix' => 'custom_',
   ],
@@ -144,49 +206,29 @@ function callback()
     ];
   } else {
     ["code" => $code, "state" => $state] = $_GET;
+    $providerFound = false;
     foreach ($GLOBALS['providers'] as $oauth) {
+      $providerFound = true;
       if (str_starts_with($state, $oauth['prefix'])) {
-        die($oauth['prefix']);
+        $oauth['class']->setCode($code);
 
         $response = file_get_contents($oauth['class']->getAccessTokenUri());
         $token = json_decode($response, true);
+
+        $oauth['class']->setToken($token['access_token']);
+        $response = file_get_contents($oauth['class']->getUserInfosUri(), false, $oauth['class']->getUserInfosContext());
+        $user = json_decode($response, true);
+        $oauth['class']->setUserInfos($user);
+        die($oauth['class']);
       }
     }
-    if (str_starts_with($state, "ds_")) {
-      die("Discord OAuth is not supported yet");
-    } elseif (str_starts_with($state, "fb_")) {
-      die("Facebook OAuth is not supported yet");
-    } elseif (str_starts_with($state, "custom_")) {
-      die("Custom OAuth is not supported yet");
-    } else {
-      throw new Exception("Invalid state");
+    if (!$providerFound) {
+      die("Provider not found");
     }
-
-    $specifParams = [
-      'code' => $code,
-      'grant_type' => 'authorization_code',
-    ];
   }
-
-  $queryParams = http_build_query(array_merge([
-    'client_id' => $,
-    'client_secret' => OAUTH_CLIENT_SECRET,
-    'redirect_uri' => 'http://localhost:8081/callback',
-  ], $specifParams));
-  $response = file_get_contents("http://server:8080/token?{$queryParams}");
-  $token = json_decode($response, true);
-
-  $context = stream_context_create([
-    'http' => [
-      'header' => "Authorization: Bearer {$token['access_token']}"
-    ]
-  ]);
-  $response = file_get_contents("http://server:8080/me", false, $context);
-  $user = json_decode($response, true);
-  echo "Hello {$user['lastname']} {$user['firstname']}";
 }
 
-function fbcallback()
+function dscallback()
 {
   ["code" => $code, "state" => $state] = $_GET;
 
@@ -196,78 +238,45 @@ function fbcallback()
   ];
 
   $queryParams = http_build_query(array_merge([
-    'client_id' => FACEBOOK_CLIENT_ID,
-    'client_secret' => FACEBOOK_CLIENT_SECRET,
-    'redirect_uri' => 'http://localhost:8081/fb_callback',
+    'client_id' => DISCORD_CLIENT_ID,
+    'client_secret' => DISCORD_CLIENT_SECRET,
+    'redirect_uri' => 'http://localhost:8081/ds_callback',
   ], $specifParams));
-  $response = file_get_contents("https://graph.facebook.com/v2.10/oauth/access_token?{$queryParams}");
-  $token = json_decode($response, true);
 
   $context = stream_context_create([
     'http' => [
+      'method'  => 'POST',
+      'header' => "Content-type: application/x-www-form-urlencoded\r\n"
+        . "Content-Length: " . strlen($queryParams) . "\r\n",
+      'content' => $queryParams
+    ]
+  ]);
+
+  $response = file_get_contents("https://discord.com/api/oauth2/token", false, $context);
+  $token = json_decode($response, true);
+  // $user = "https://discord.com/api/oauth2/users/@me";
+
+  $context = stream_context_create([
+    'http' => [
+      'method' => 'GET',
       'header' => "Authorization: Bearer {$token['access_token']}"
     ]
   ]);
-  $response = file_get_contents("https://graph.facebook.com/v2.10/me", false, $context);
+  $response = file_get_contents("https://discord.com/api/oauth2/@me", false, $context);
   $user = json_decode($response, true);
-  echo "Hello {$user['name']}";
-}
 
-function dscallback()
-{
-    ["code" => $code, "state" => $state] = $_GET;
-
-    $specifParams = [
-            'code' => $code,
-            'grant_type' => 'authorization_code',
-        ];
-
-    $queryParams = http_build_query(array_merge([
-        'client_id' => DISCORD_CLIENT_ID,
-        'client_secret' => DISCORD_CLIENT_SECRET,
-        'redirect_uri' => 'http://localhost:8081/ds_callback',
-    ], $specifParams));
-
-    $context = stream_context_create([
-        'http' => [
-            'method'  => 'POST',
-            'header' => "Content-type: application/x-www-form-urlencoded\r\n"
-              . "Content-Length: " . strlen($queryParams) . "\r\n",
-            'content' => $queryParams
-            ]
-        ]);
-
-    $response = file_get_contents("https://discord.com/api/oauth2/token", false, $context);
-    $token = json_decode($response, true);
-    // $user = "https://discord.com/api/oauth2/users/@me";
-
-    $context = stream_context_create([
-        'http' => [
-            'method' => 'GET',
-            'header' => "Authorization: Bearer {$token['access_token']}"
-            ]
-        ]);
-    $response = file_get_contents("https://discord.com/api/oauth2/@me", false, $context);
-    $user = json_decode($response, true);
-
-    echo "Hello {$user['user']['username']}";
+  echo "Hello {$user['user']['username']}";
 }
 
 $route = $_SERVER["REQUEST_URI"];
 switch (strtok($route, "?")) {
-    case '/login':
-        login();
-        break;
-    case '/callback':
-        callback();
-        break;
-    case '/fb_callback':
-        fbcallback();
-        break;
-    case '/ds_callback':
-        dscallback();
-        break;
-    default:
-        http_response_code(404);
-        break;
+  case '/login':
+    login();
+    break;
+  case '/callback':
+    callback();
+    break;
+  default:
+    http_response_code(404);
+    break;
 }
