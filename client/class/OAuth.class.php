@@ -65,7 +65,8 @@ class OAuth
         'header' => [
           'Content-Type: application/x-www-form-urlencoded',
           'Content-Length: ' . strlen($this->generateAccessTokenQueryParams()),
-        ]
+        ],
+        'content' => $this->generateAccessTokenQueryParams()
       ],
     ]);
     return $context;
