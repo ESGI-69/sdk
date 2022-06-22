@@ -1,0 +1,8 @@
+<?php
+
+define('OAUTH_CLIENT_ID', null);
+define('OAUTH_CLIENT_SECRET', null);
+define('FACEBOOK_CLIENT_ID', null);
+define('FACEBOOK_CLIENT_SECRET', null);
+define('DISCORD_CLIENT_ID', null);
+define('DISCORD_CLIENT_SECRET', null);
