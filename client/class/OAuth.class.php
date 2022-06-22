@@ -10,9 +10,10 @@ class OAuth
   protected $oAuthUri;
   protected $clientSecret;
   protected $accessTokenUri;
-  protected $tokenArray;
+  protected $token;
   protected $userInfoUri;
   protected $userInfos;
+  protected $retriveTokenMethod = 'GET';
 
   protected function generateQueryParams(): string
   {
@@ -55,12 +56,34 @@ class OAuth
     $this->code = $code;
   }
 
-  public function setToken(string $token)
+  protected function retriveTokenContext()
+  {
+    print_r(strlen($this->generateAccessTokenQueryParams()));
+    $context = stream_context_create([
+      'http' => [
+        'method' => $this->retriveTokenMethod,
+        'header' => [
+          'Content-Type: application/x-www-form-urlencoded',
+          'Content-Length: ' . strlen($this->generateAccessTokenQueryParams()),
+        ]
+      ],
+    ]);
+    return $context;
+  }
+
+  public function retriveToken()
+  {
+    $response = file_get_contents($this->getAccessTokenUri(), false, $this->retriveTokenContext());
+    print_r(json_encode($response));
+    $this->setToken(json_decode($response, true)['access_token']);
+  }
+
+  protected function setToken(string $token)
   {
     $this->token = $token;
   }
 
-  public function getToken()
+  protected function getToken()
   {
     return $this->token;
   }

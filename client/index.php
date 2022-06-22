@@ -5,8 +5,20 @@ require './class/OAuth.class.php';
 require './class/FacebookOAuth.class.php';
 require './class/DiscordOAuth.class.php';
 require './class/CustomOAuth.class.php';
+require './class/GoogleOAuth.class.php';
 
 $providers = [
+  'Goolge' => [
+    'class' => new GoogleOAuth(
+      GOOGLE_CLIENT_ID,
+      'https://accounts.google.com/o/oauth2/auth',
+      'email profile',
+      GOOGLE_CLIENT_SECRET,
+      'https://oauth2.googleapis.com/token',
+      'https://www.googleapis.com/oauth2/v1/certs',
+    ),
+    'prefix' => 'gl_',
+  ],
   'Discord' => [
     'class' => new DiscordOAuth(
       DISCORD_CLIENT_ID,
@@ -15,7 +27,7 @@ $providers = [
       DISCORD_CLIENT_SECRET,
       'https://discord.com/api/oauth2/token',
       'https://discord.com/api/users/@me',
-      'DISCORD'
+      'POST'
     ),
     'prefix' => 'ds_',
   ],
@@ -27,7 +39,6 @@ $providers = [
       FACEBOOK_CLIENT_SECRET,
       'https://graph.facebook.com/v2.10/oauth/access_token',
       'https://graph.facebook.com/v2.10/me',
-      'FACEBOOK'
     ),
     'prefix' => 'fb_',
   ],
@@ -39,7 +50,6 @@ $providers = [
       OAUTH_CLIENT_SECRET,
       'http://server:8080/token',
       'http://server:8080/me',
-      'CUSTOM'
     ),
     'prefix' => 'custom_',
   ],
@@ -78,11 +88,7 @@ function callback()
       $providerFound = true;
       if (str_starts_with($state, $oauth['prefix'])) {
         $oauth['class']->setCode($code);
-
-        $response = file_get_contents($oauth['class']->getAccessTokenUri());
-        $token = json_decode($response, true);
-
-        $oauth['class']->setToken($token['access_token']);
+        $oauth['class']->retriveToken();
         $response = file_get_contents($oauth['class']->getUserInfosUri(), false, $oauth['class']->getUserInfosContext());
         $user = json_decode($response, true);
         $oauth['class']->setUserInfos($user);

@@ -1,6 +1,6 @@
 <?php
 
-class DiscordOAuth extends OAuth
+class GoogleOAuth extends OAuth
 {
   public function __construct(
     string $clientId,
@@ -13,7 +13,7 @@ class DiscordOAuth extends OAuth
   ) {
     $this->clientId = $clientId;
     $this->scope = $scope;
-    $this->state = "ds_" . bin2hex(random_bytes(16));
+    $this->state = "gl_" . bin2hex(random_bytes(16));
     $this->oAuthUri = $oAuthUri;
     $this->clientSecret = $clientSecret;
     $this->accessTokenUri = $accessTokenUri;
