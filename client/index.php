@@ -1,14 +1,6 @@
 <?php
 
-
-define('OAUTH_CLIENT_ID', '621f59c71bc35');
-define('OAUTH_CLIENT_SECRET', '621f59c71bc36');
-define('FACEBOOK_CLIENT_ID', '675644477181933');
-define('FACEBOOK_CLIENT_SECRET', '09b4823fd8098732d4ba03afac277dad');
-define('DISCORD_CLIENT_ID', '988797982344372284');
-define('DISCORD_CLIENT_SECRET', 'XbTq51Re5g-dxrQ85FKjBuZBmYDMPVTP');
-define('GITHUB_CLIENT_ID', '2be41579a6dd71c805ce');
-define('GITHUB_CLIENT_SECRET', '7905130b5afefed0c2c79b893633b30ddc8356b1');
+require "config.inc.php";
  
 function login()
 {
