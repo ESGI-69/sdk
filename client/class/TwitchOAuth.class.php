@@ -1,6 +1,6 @@
 <?php
 
-class GoogleOAuth extends OAuth
+class TwitchOAuth extends OAuth
 {
   public function __construct(
     string $clientId,
@@ -13,11 +13,16 @@ class GoogleOAuth extends OAuth
   ) {
     $this->clientId = $clientId;
     $this->scope = $scope;
-    $this->state = "gl_" . bin2hex(random_bytes(16));
+    $this->state = "twitch_" . bin2hex(random_bytes(16));
     $this->oAuthUri = $oAuthUri;
     $this->clientSecret = $clientSecret;
     $this->accessTokenUri = $accessTokenUri;
     $this->userInfoUri = $userInfoUri;
     $this->retriveTokenMethod = $retriveTokenMethod;
+  }
+
+  public function __toString()
+  {
+    return "Bonjour " . $this->userInfos['data'][0]['display_name'] . " ! <img src='" . $this->userInfos['data'][0]['profile_image_url'] . "'>";
   }
 };

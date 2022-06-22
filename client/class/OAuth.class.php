@@ -58,7 +58,6 @@ class OAuth
 
   protected function retriveTokenContext()
   {
-    print_r(strlen($this->generateAccessTokenQueryParams()));
     $context = stream_context_create([
       'http' => [
         'method' => $this->retriveTokenMethod,
@@ -75,7 +74,6 @@ class OAuth
   public function retriveToken()
   {
     $response = file_get_contents($this->getAccessTokenUri(), false, $this->retriveTokenContext());
-    print_r(json_encode($response));
     $this->setToken(json_decode($response, true)['access_token']);
   }
 
@@ -98,7 +96,10 @@ class OAuth
   {
     return stream_context_create([
       'http' => [
-        'header' => "Authorization: Bearer " . $this->getToken() . "",
+        'header' => [
+          "Authorization: Bearer " . $this->getToken() . "",
+          "Client-ID: " . $this->clientId . "",
+        ],
       ]
     ]);
   }

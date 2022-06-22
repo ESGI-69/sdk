@@ -5,19 +5,20 @@ require './class/OAuth.class.php';
 require './class/FacebookOAuth.class.php';
 require './class/DiscordOAuth.class.php';
 require './class/CustomOAuth.class.php';
-require './class/GoogleOAuth.class.php';
+require './class/TwitchOAuth.class.php';
 
 $providers = [
-  'Goolge' => [
-    'class' => new GoogleOAuth(
-      GOOGLE_CLIENT_ID,
-      'https://accounts.google.com/o/oauth2/auth',
-      'email profile',
-      GOOGLE_CLIENT_SECRET,
-      'https://oauth2.googleapis.com/token',
-      'https://www.googleapis.com/oauth2/v1/certs',
+  'Twitch' => [
+    'class' => new TwitchOAuth(
+      TWITCH_CLIENT_ID,
+      'https://id.twitch.tv/oauth2/authorize',
+      '',
+      TWITCH_CLIENT_SECRET,
+      'https://id.twitch.tv/oauth2/token',
+      'https://api.twitch.tv/helix/users',
+      'POST'
     ),
-    'prefix' => 'gl_',
+    'prefix' => 'twitch_',
   ],
   'Discord' => [
     'class' => new DiscordOAuth(
