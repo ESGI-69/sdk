@@ -23,7 +23,7 @@ $providers = [
     'class' => new DiscordOAuth(
       DISCORD_CLIENT_ID,
       'http://discord.com/api/oauth2/authorize',
-      'identify',
+      'identify email',
       DISCORD_CLIENT_SECRET,
       'https://discord.com/api/oauth2/token',
       'https://discord.com/api/users/@me',

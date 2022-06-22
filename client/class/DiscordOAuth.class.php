@@ -20,4 +20,9 @@ class DiscordOAuth extends OAuth
     $this->userInfoUri = $userInfoUri;
     $this->retriveTokenMethod = $retriveTokenMethod;
   }
+
+  public function __toString()
+  {
+    return "Bonjour " . ($this->userInfos['username']) . " !";
+  }
 };
