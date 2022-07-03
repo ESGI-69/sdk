@@ -6,6 +6,7 @@ require './class/FacebookOAuth.class.php';
 require './class/DiscordOAuth.class.php';
 require './class/CustomOAuth.class.php';
 require './class/TwitchOAuth.class.php';
+require './class/GithubOAuth.class.php';
 
 $providers = [
   'Twitch' => [
@@ -43,6 +44,17 @@ $providers = [
     ),
     'prefix' => 'fb_',
   ],
+  'Github' => [
+    'class' => new GithubOAuth(
+      GITHUB_CLIENT_ID,
+      'https://github.com/login/oauth/authorize',
+      'user',
+      GITHUB_CLIENT_SECRET,
+      'https://github.com/login/oauth/access_token',
+      'https://api.github.com/user',
+    ),
+    'prefix' => 'gh_',
+  ],
   'Custom Oauth Server' => [
     'class' => new CustomOAuth(
       OAUTH_CLIENT_ID,
@@ -74,7 +86,7 @@ function login()
 
 // Exchange code for token then get user info
 function callback()
-{
+{ 
   if ($_SERVER["REQUEST_METHOD"] == "POST") {
     ["username" => $username, "password" => $password] = $_POST;
     $specifParams = [
@@ -102,45 +114,6 @@ function callback()
   }
 }
 
-function dscallback()
-{
-  ["code" => $code, "state" => $state] = $_GET;
-
-  $specifParams = [
-    'code' => $code,
-    'grant_type' => 'authorization_code',
-  ];
-
-  $queryParams = http_build_query(array_merge([
-    'client_id' => DISCORD_CLIENT_ID,
-    'client_secret' => DISCORD_CLIENT_SECRET,
-    'redirect_uri' => 'http://localhost:8081/ds_callback',
-  ], $specifParams));
-
-  $context = stream_context_create([
-    'http' => [
-      'method'  => 'POST',
-      'header' => "Content-type: application/x-www-form-urlencoded\r\n"
-        . "Content-Length: " . strlen($queryParams) . "\r\n",
-      'content' => $queryParams
-    ]
-  ]);
-
-  $response = file_get_contents("https://discord.com/api/oauth2/token", false, $context);
-  $token = json_decode($response, true);
-  // $user = "https://discord.com/api/oauth2/users/@me";
-
-  $context = stream_context_create([
-    'http' => [
-      'method' => 'GET',
-      'header' => "Authorization: Bearer {$token['access_token']}"
-    ]
-  ]);
-  $response = file_get_contents("https://discord.com/api/oauth2/@me", false, $context);
-  $user = json_decode($response, true);
-
-  echo "Hello {$user['user']['username']}";
-}
 
 $route = $_SERVER["REQUEST_URI"];
 switch (strtok($route, "?")) {

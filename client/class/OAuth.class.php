@@ -64,6 +64,7 @@ class OAuth
         'header' => [
           'Content-Type: application/x-www-form-urlencoded',
           'Content-Length: ' . strlen($this->generateAccessTokenQueryParams()),
+          'Accept: application/json'
         ],
         'content' => $this->generateAccessTokenQueryParams()
       ],
@@ -99,6 +100,7 @@ class OAuth
         'header' => [
           "Authorization: Bearer " . $this->getToken() . "",
           "Client-ID: " . $this->clientId . "",
+          'User-Agent: PHP'
         ],
       ]
     ]);
